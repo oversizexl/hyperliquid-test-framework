@@ -1,22 +1,18 @@
 # 工作流名称，在 GitHub Actions 列表中显示
 name: Hyperliquid Test Suite
 
-# 触发条件
+# 触发条件：仅手动触发 + 定时触发（不随 push/PR 自动跑，节省 token）
 on:
-  # 推送到 main 或 master 分支时运行
-  push:
-    branches: [main, master]
-  # 针对 main/master 的 PR 创建或更新时运行
-  pull_request:
-    branches: [main, master]
-  # 定时触发：北京时间每天 00:00（UTC+8 = UTC 16:00）
+  # 定时触发：北京时间每天 00:00（UTC+8 = UTC 16:00），是否执行由仓库变量 DAILY_SCHEDULE_ENABLED 控制
   schedule:
     - cron: "0 16 * * *"
-  # 支持在 Actions 页手动点击 “Run workflow” 触发
+  # 在 Actions 页点击 “Run workflow” 手动触发
   workflow_dispatch:
 
 # 工作流级环境变量（所有 job 的 steps 可见）
 env:
+  # 使用 Node.js 24 运行 JavaScript actions，消除 Node 20 弃用警告
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
   HL_BASE_URL: https://api.hyperliquid-testnet.xyz
   HL_IS_MAINNET: "false"
   HL_DEFAULT_COIN: ETH
@@ -36,17 +32,13 @@ jobs:
       CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
       CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
       CF_PAGES_PROJECT_NAME: ${{ secrets.CF_PAGES_PROJECT_NAME }}
-    strategy:
-      matrix:
-        python-version: ["3.12"]
-
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python 3.12
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.12"
 
       - name: Install dependencies
         run: |
@@ -76,9 +68,9 @@ jobs:
             -v \
             -m "not concurrent"
 
-      # 生成 Allure HTML 报告（仅当前矩阵为 3.12 时，避免重复）
+      # 生成 Allure HTML 报告
       - name: Generate Allure HTML report
-        if: always() && matrix.python-version == '3.12'
+        if: always()
         run: |
           if [ -d "reports/allure-results" ]; then
             allure generate reports/allure-results -o reports/allure-report --clean
@@ -88,7 +80,7 @@ jobs:
 
       # 将生成的报告发布到 Cloudflare Pages
       - name: Deploy Allure report to Cloudflare Pages
-        if: always() && matrix.python-version == '3.12'
+        if: always()
         uses: cloudflare/pages-action@v1
         with:
           apiToken: ${{ env.CF_API_TOKEN }}
@@ -97,11 +89,19 @@ jobs:
           directory: reports/allure-report
           branch: main
 
+      # 在 Job 摘要中输出报告链接，打开 Actions 即可点击跳转
+      - name: Report URL
+        if: always()
+        run: |
+          echo "## 📊 Allure Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**[View Report](https://report.hioo.de/)**" >> $GITHUB_STEP_SUMMARY
+
       # 上传 Allure 原始结果为 artifact，便于本地查看或二次生成
       - name: Upload test report (Allure raw results)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-reports-py${{ matrix.python-version }}
+          name: test-reports-py3.12
           path: reports/
           retention-days: 14
