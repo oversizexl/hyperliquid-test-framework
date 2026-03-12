@@ -15,6 +15,12 @@ env:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      HL_WALLET_ADDRESS: ${{ secrets.HL_WALLET_ADDRESS }}
+      HL_PRIVATE_KEY: ${{ secrets.HL_PRIVATE_KEY }}
+      CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+      CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+      CF_PAGES_PROJECT_NAME: ${{ secrets.CF_PAGES_PROJECT_NAME }}
     strategy:
       matrix:
         python-version: ["3.11", "3.12"]
@@ -45,19 +51,13 @@ jobs:
             -m "smoke or error" \
             -v \
             || true
-        env:
-          HL_WALLET_ADDRESS: ${{ secrets.HL_WALLET_ADDRESS }}
-          HL_PRIVATE_KEY: ${{ secrets.HL_PRIVATE_KEY }}
 
       - name: Run full test suite
-        if: ${{ secrets.HL_PRIVATE_KEY != '' }}
+        if: ${{ env.HL_PRIVATE_KEY != '' }}
         run: |
           pytest \
             -v \
             -m "not concurrent"
-        env:
-          HL_WALLET_ADDRESS: ${{ secrets.HL_WALLET_ADDRESS }}
-          HL_PRIVATE_KEY: ${{ secrets.HL_PRIVATE_KEY }}
 
       - name: Generate Allure HTML report
         if: always() && matrix.python-version == '3.12'
@@ -72,9 +72,9 @@ jobs:
         if: always() && matrix.python-version == '3.12'
         uses: cloudflare/pages-action@v1
         with:
-          apiToken: ${{ secrets.CF_API_TOKEN }}
-          accountId: ${{ secrets.CF_ACCOUNT_ID }}
-          projectName: ${{ secrets.CF_PAGES_PROJECT_NAME }}
+          apiToken: ${{ env.CF_API_TOKEN }}
+          accountId: ${{ env.CF_ACCOUNT_ID }}
+          projectName: ${{ env.CF_PAGES_PROJECT_NAME }}
           directory: reports/allure-report
           branch: main
 
