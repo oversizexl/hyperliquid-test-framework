@@ -1,0 +1,13 @@
+{
+  "status": "ok",
+  "response": {
+    "type": "order",
+    "data": {
+      "statuses": [
+        {
+          "error": "Order has invalid price."
+        }
+      ]
+    }
+  }
+}

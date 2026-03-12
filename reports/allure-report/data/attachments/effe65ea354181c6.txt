@@ -1,0 +1,2 @@
+2026-03-12 16:00:44 | INFO     | hl.client | POST https://api.hyperliquid-testnet.xyz/exchange  action.type=order
+2026-03-12 16:00:45 | INFO     | hl.waiter | Condition 'order 49993449991 visible in open orders' met after 1 polls

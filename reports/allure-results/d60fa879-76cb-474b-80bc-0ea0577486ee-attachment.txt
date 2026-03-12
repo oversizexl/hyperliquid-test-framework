@@ -1,0 +1,3 @@
+2026-03-12 16:01:03 | INFO     | hl.client | POST https://api.hyperliquid-testnet.xyz/exchange  action.type=order
+2026-03-12 16:01:04 | INFO     | hl.client | POST https://api.hyperliquid-testnet.xyz/exchange  action.type=order
+2026-03-12 16:01:05 | INFO     | hl.waiter | Condition 'position closed' met after 1 polls

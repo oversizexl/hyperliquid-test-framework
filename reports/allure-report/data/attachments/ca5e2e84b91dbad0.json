@@ -1,0 +1,26 @@
+{
+  "action": {
+    "type": "order",
+    "orders": [
+      {
+        "a": 4,
+        "b": true,
+        "p": "2142.2",
+        "s": "0.0059",
+        "r": false,
+        "t": {
+          "limit": {
+            "tif": "Ioc"
+          }
+        }
+      }
+    ],
+    "grouping": "na"
+  },
+  "nonce": 1773302458908,
+  "signature": {
+    "r": "***",
+    "s": "***",
+    "v": "***"
+  }
+}

@@ -1,0 +1,2 @@
+2026-03-12 16:00:47 | INFO     | hl.client | POST https://api.hyperliquid-testnet.xyz/exchange  action.type=order
+2026-03-12 16:00:48 | INFO     | hl.client | POST https://api.hyperliquid-testnet.xyz/exchange  action.type=cancel

@@ -1,0 +1,18 @@
+{
+  "marginSummary": {
+    "accountValue": "5.212914",
+    "totalNtlPos": "0.0",
+    "totalRawUsd": "5.212914",
+    "totalMarginUsed": "0.0"
+  },
+  "crossMarginSummary": {
+    "accountValue": "5.212914",
+    "totalNtlPos": "0.0",
+    "totalRawUsd": "5.212914",
+    "totalMarginUsed": "0.0"
+  },
+  "crossMaintenanceMarginUsed": "0.0",
+  "withdrawable": "0.051613",
+  "assetPositions": [],
+  "time": 1773302465396
+}

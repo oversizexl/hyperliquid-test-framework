@@ -1,0 +1,6 @@
+[32mINFO    [0m hl.client:hyperliquid_client.py:78 POST https://api.hyperliquid-testnet.xyz/exchange  action.type=order
+[32mINFO    [0m hl.client:hyperliquid_client.py:78 POST https://api.hyperliquid-testnet.xyz/exchange  action.type=order
+[32mINFO    [0m hl.client:hyperliquid_client.py:78 POST https://api.hyperliquid-testnet.xyz/exchange  action.type=order
+[32mINFO    [0m hl.client:hyperliquid_client.py:78 POST https://api.hyperliquid-testnet.xyz/exchange  action.type=order
+[32mINFO    [0m hl.client:hyperliquid_client.py:78 POST https://api.hyperliquid-testnet.xyz/exchange  action.type=order
+[32mINFO    [0m hl.test.concurrent:test_concurrent.py:51 Concurrent results: 5 success, 0 failure out of 5

@@ -1,0 +1,16 @@
+{
+  "status": "ok",
+  "response": {
+    "type": "order",
+    "data": {
+      "statuses": [
+        {
+          "resting": {
+            "oid": 49993449118,
+            "cloid": "0x86d084bb61854c409d4e1277d37306e1"
+          }
+        }
+      ]
+    }
+  }
+}

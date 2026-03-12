@@ -1,0 +1,26 @@
+{
+  "action": {
+    "type": "order",
+    "orders": [
+      {
+        "a": 4,
+        "b": true,
+        "p": "1020",
+        "s": "0.0108",
+        "r": false,
+        "t": {
+          "limit": {
+            "tif": "Gtc"
+          }
+        }
+      }
+    ],
+    "grouping": "na"
+  },
+  "nonce": 1773302432931,
+  "signature": {
+    "r": "***",
+    "s": "***",
+    "v": "***"
+  }
+}

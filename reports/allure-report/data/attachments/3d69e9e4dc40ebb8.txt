@@ -1,0 +1,1 @@
+[32mINFO    [0m hl.client:hyperliquid_client.py:78 POST https://api.hyperliquid-testnet.xyz/exchange  action.type=order

@@ -1,0 +1,3 @@
+[32mINFO    [0m hl.client:hyperliquid_client.py:78 POST https://api.hyperliquid-testnet.xyz/exchange  action.type=order
+[32mINFO    [0m hl.client:hyperliquid_client.py:78 POST https://api.hyperliquid-testnet.xyz/exchange  action.type=cancel
+[32mINFO    [0m hl.waiter:waiters.py:43 Condition 'order 49993455641 status=canceled' met after 1 polls
