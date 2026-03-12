@@ -1,20 +1,35 @@
+# 工作流名称，在 GitHub Actions 列表中显示
 name: Hyperliquid Test Suite
 
+# 触发条件
 on:
+  # 推送到 main 或 master 分支时运行
   push:
     branches: [main, master]
+  # 针对 main/master 的 PR 创建或更新时运行
   pull_request:
     branches: [main, master]
+  # 定时触发：北京时间每天 00:00（UTC+8 = UTC 16:00）
+  schedule:
+    - cron: "0 16 * * *"
+  # 支持在 Actions 页手动点击 “Run workflow” 触发
   workflow_dispatch:
 
+# 工作流级环境变量（所有 job 可见）
 env:
   HL_BASE_URL: https://api.hyperliquid-testnet.xyz
   HL_IS_MAINNET: "false"
   HL_DEFAULT_COIN: ETH
+  # 是否开启「每日定时自动执行」：仅当由 schedule 触发时生效
+  # "true" = 每日 0 点（北京时间）自动跑一轮；"false" = 不跑定时任务
+  DAILY_SCHEDULE_ENABLED: "false"
 
 jobs:
   test:
+    # 非定时触发时始终运行；定时触发时仅当 DAILY_SCHEDULE_ENABLED 为 true 才运行
+    if: github.event_name != 'schedule' || env.DAILY_SCHEDULE_ENABLED == 'true'
     runs-on: ubuntu-latest
+    # 将仓库 Secrets 映射为 env，避免在 if 等表达式中直接使用 secrets 导致 fork PR 解析错误
     env:
       HL_WALLET_ADDRESS: ${{ secrets.HL_WALLET_ADDRESS }}
       HL_PRIVATE_KEY: ${{ secrets.HL_PRIVATE_KEY }}
@@ -45,6 +60,7 @@ jobs:
           sudo tar -zxvf allure.tgz -C /opt/
           sudo ln -s /opt/allure-${ALLURE_VERSION}/bin/allure /usr/local/bin/allure
 
+      # 冒烟测试，不依赖钱包也可跑，失败不阻塞
       - name: Run smoke tests (no wallet required)
         run: |
           pytest tests/test_account.py tests/test_errors.py \
@@ -52,6 +68,7 @@ jobs:
             -v \
             || true
 
+      # 完整测试：仅当配置了私钥时执行
       - name: Run full test suite
         if: ${{ env.HL_PRIVATE_KEY != '' }}
         run: |
@@ -59,6 +76,7 @@ jobs:
             -v \
             -m "not concurrent"
 
+      # 生成 Allure HTML 报告（仅当前矩阵为 3.12 时，避免重复）
       - name: Generate Allure HTML report
         if: always() && matrix.python-version == '3.12'
         run: |
@@ -68,6 +86,7 @@ jobs:
             echo "No allure-results directory found, skip HTML generation."
           fi
 
+      # 将生成的报告发布到 Cloudflare Pages
       - name: Deploy Allure report to Cloudflare Pages
         if: always() && matrix.python-version == '3.12'
         uses: cloudflare/pages-action@v1
@@ -78,6 +97,7 @@ jobs:
           directory: reports/allure-report
           branch: main
 
+      # 上传 Allure 原始结果为 artifact，便于本地查看或二次生成
       - name: Upload test report (Allure raw results)
         if: always()
         uses: actions/upload-artifact@v4
