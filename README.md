@@ -22,14 +22,13 @@ pip install -r requirements.txt
 
 ### 3. 配置
 
-复制环境变量模板并填入你的测试钱包信息：
-
-```bash
-cp .env.example .env
-# 编辑 .env，填入 HL_WALLET_ADDRESS 和 HL_PRIVATE_KEY
-```
-
-> **安全提示**：`.env` 已在 `.gitignore` 中，绝不要将私钥提交到代码仓库。
+- **仅通过 GitHub Actions 跑测试**：在仓库 **Settings → Secrets and variables → Actions** 中配置 `HL_WALLET_ADDRESS`、`HL_PRIVATE_KEY` 等（见下方 CI 与 Allure 报告一节），无需本地 `.env`。
+- **要在本地运行测试**：复制环境变量模板并填入测试钱包信息：
+  ```bash
+  cp .env.example .env
+  # 编辑 .env，填入 HL_WALLET_ADDRESS 和 HL_PRIVATE_KEY
+  ```
+  > **安全提示**：`.env` 已在 `.gitignore` 中，绝不要将私钥提交到代码仓库。
 
 ### 4. 运行测试
 
@@ -111,7 +110,7 @@ Settings → Secrets and variables → Actions → New repository secret
 
 完成上述配置后：
 
-- 每次 push / PR / 手动触发 **Hyperliquid Test Suite**：
+- 手动触发或定时触发 **Hyperliquid Test Suite** 时：
   - CI 会在 Ubuntu Runner 上安装 Allure CLI；
   - 运行 smoke / 全量测试，生成 `reports/allure-results`；
   - 使用 `allure generate` 生成 `reports/allure-report`（静态 HTML）；
@@ -156,7 +155,7 @@ hyperliquid-test-framework/
 │   └── config.yaml                # 默认配置
 │
 ├── .github/workflows/
-│   └── Hyperliquid_test_suite.yml  # GitHub Actions CI（含 push/PR/定时/手动触发）
+│   └── Hyperliquid_test_suite.yml  # GitHub Actions CI（仅定时 + 手动触发，不随 push/PR 跑）
 │
 ├── reports/                       # 测试报告输出目录
 ├── conftest.py                    # pytest 根 conftest
@@ -260,7 +259,7 @@ order = wait_until(
 
 ## CI
 
-项目配置了 GitHub Actions（`.github/workflows/Hyperliquid_test_suite.yml`），在 **push / PR / 手动触发** 时自动运行 **Hyperliquid Test Suite**：
+项目配置了 GitHub Actions（`.github/workflows/Hyperliquid_test_suite.yml`），**仅在手动触发或定时触发时运行**（不随 push/PR 自动跑，节省 token）：
 
 1. **Smoke 测试**：`tests/test_account.py` + `tests/test_errors.py`，标记为 `smoke or error`，即使钱包未配置也会尝试运行。
 2. **完整测试**：当仓库 Secrets 中存在 `HL_PRIVATE_KEY` 时，会运行除并发测试外的全部用例（`-m "not concurrent"`）。
@@ -274,7 +273,7 @@ order = wait_until(
 
 | 配置 | 含义 |
 |------|------|
-| 未设置或 ≠ `true` | 不执行定时任务：只有 push、PR、手动触发时会跑。 |
+| 未设置或 ≠ `true` | 不执行定时任务：只有手动触发时会跑。 |
 | 设为 `true` | 开启定时：除上述触发外，每天北京时间 0 点会再自动跑一次。 |
 
 **开启方式**：在 GitHub 仓库 **Settings → Secrets and variables → Actions → Variables** 中，新增变量名 `DAILY_SCHEDULE_ENABLED`，值填 `true`。关闭则删除该变量或将值改为非 `true`。定时使用 GitHub `schedule`（cron），当前配置对应北京 00:00。
