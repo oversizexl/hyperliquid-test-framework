@@ -26,9 +26,10 @@ env:
 # 在 Settings → Secrets and variables → Actions → Variables 中新增 DAILY_SCHEDULE_ENABLED = true 即开启
 
 jobs:
-  test:
+  e2e:
+    name: Hyperliquid E2E Tests
     # 非定时触发时始终运行；定时触发时仅当仓库变量 DAILY_SCHEDULE_ENABLED == 'true' 时才运行
-    if: github.event_name != 'schedule' || vars.DAILY_SCHEDULE_ENABLED == 'true'
+    if: ${{ github.event_name != 'schedule' || vars.DAILY_SCHEDULE_ENABLED == 'true' }}
     runs-on: ubuntu-latest
     # 将仓库 Secrets 映射为 env，避免在 if 等表达式中直接使用 secrets 导致 fork PR 解析错误
     env:
@@ -45,71 +46,71 @@ jobs:
         with:
           python-version: "3.12"
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-    - name: Install Allure CLI
-      run: |
-        ALLURE_VERSION=2.29.0
-        curl -sL "https://github.com/allure-framework/allure2/releases/download/${ALLURE_VERSION}/allure-${ALLURE_VERSION}.tgz" -o allure.tgz
-        sudo tar -zxvf allure.tgz -C /opt/
-        sudo ln -s /opt/allure-${ALLURE_VERSION}/bin/allure /usr/local/bin/allure
+      - name: Install Allure CLI
+        run: |
+          ALLURE_VERSION=2.29.0
+          curl -sL "https://github.com/allure-framework/allure2/releases/download/${ALLURE_VERSION}/allure-${ALLURE_VERSION}.tgz" -o allure.tgz
+          sudo tar -zxvf allure.tgz -C /opt/
+          sudo ln -s /opt/allure-${ALLURE_VERSION}/bin/allure /usr/local/bin/allure
 
-    # 根据输入的 marker 决定运行范围；为空时跑默认组合（smoke + 全量，排除 concurrent）
-    - name: Run tests (by marker or default set)
-      run: |
-        if [ -n "${{ github.event.inputs.marker }}" ]; then
-          echo "Run with marker: ${{ github.event.inputs.marker }}"
-          pytest -m "${{ github.event.inputs.marker }}" -v
-        else
-          echo "Run default suite (smoke + full, not concurrent)"
-          pytest tests/test_account.py tests/test_errors.py \
-            -m "smoke or error" \
-            -v || true
-
-          if [ -n "${{ env.HL_PRIVATE_KEY }}" ]; then
-            pytest -v -m "not concurrent"
+      # 根据输入的 marker 决定运行范围；为空时跑默认组合（smoke + 全量，排除 concurrent）
+      - name: Run tests (by marker or default set)
+        run: |
+          if [ -n "${{ github.event.inputs.marker }}" ]; then
+            echo "Run with marker: ${{ github.event.inputs.marker }}"
+            pytest -m "${{ github.event.inputs.marker }}" -v
           else
-            echo "HL_PRIVATE_KEY not set, skip full suite."
+            echo "Run default suite (smoke + full, not concurrent)"
+            pytest tests/test_account.py tests/test_errors.py \
+              -m "smoke or error" \
+              -v || true
+
+            if [ -n "${{ env.HL_PRIVATE_KEY }}" ]; then
+              pytest -v -m "not concurrent"
+            else
+              echo "HL_PRIVATE_KEY not set, skip full suite."
+            fi
           fi
-        fi
 
-    # 生成 Allure HTML 报告
-    - name: Generate Allure HTML report
-      if: always()
-      run: |
-        if [ -d "reports/allure-results" ]; then
-          allure generate reports/allure-results -o reports/allure-report --clean
-        else
-          echo "No allure-results directory found, skip HTML generation."
-        fi
+      # 生成 Allure HTML 报告
+      - name: Generate Allure HTML report
+        if: always()
+        run: |
+          if [ -d "reports/allure-results" ]; then
+            allure generate reports/allure-results -o reports/allure-report --clean
+          else
+            echo "No allure-results directory found, skip HTML generation."
+          fi
 
-    # 将生成的报告发布到 Cloudflare Pages
-    - name: Deploy Allure report to Cloudflare Pages
-      if: always()
-      uses: cloudflare/pages-action@v1
-      with:
-        apiToken: ${{ env.CF_API_TOKEN }}
-        accountId: ${{ env.CF_ACCOUNT_ID }}
-        projectName: ${{ env.CF_PAGES_PROJECT_NAME }}
-        directory: reports/allure-report
-        branch: main
+      # 将生成的报告发布到 Cloudflare Pages
+      - name: Deploy Allure report to Cloudflare Pages
+        if: always()
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ env.CF_API_TOKEN }}
+          accountId: ${{ env.CF_ACCOUNT_ID }}
+          projectName: ${{ env.CF_PAGES_PROJECT_NAME }}
+          directory: reports/allure-report
+          branch: main
 
-    # 在 Job 摘要中输出报告链接，打开 Actions 即可点击跳转
-    - name: Report URL
-      if: always()
-      run: |
-        echo "## 📊 Allure Report" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "**[View Report](https://report.hioo.de/)**" >> $GITHUB_STEP_SUMMARY
+      # 在 Job 摘要中输出报告链接，打开 Actions 即可点击跳转
+      - name: Report URL
+        if: always()
+        run: |
+          echo "## 📊 Allure Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**[View Report](https://report.hioo.de/)**" >> $GITHUB_STEP_SUMMARY
 
-    # 上传 Allure 原始结果为 artifact，便于本地查看或二次生成
-    - name: Upload test report (Allure raw results)
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: test-reports-py3.12
-        path: reports/
-        retention-days: 14
+      # 上传 Allure 原始结果为 artifact，便于本地查看或二次生成
+      - name: Upload test report (Allure raw results)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports-py3.12
+          path: reports/
+          retention-days: 14
