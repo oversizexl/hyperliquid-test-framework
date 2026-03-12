@@ -1,12 +1,12 @@
-"""Unified exception hierarchy for Hyperliquid API client."""
+"""Hyperliquid API 客户端统一异常体系。"""
 
 
 class HyperliquidError(Exception):
-    """Base exception for all Hyperliquid-related errors."""
+    """所有与 Hyperliquid 相关错误的基类。"""
 
 
 class HyperliquidApiError(HyperliquidError):
-    """Raised when the API returns a business-level error (HTTP 200 but status contains error)."""
+    """API 返回业务层错误时抛出（如 HTTP 200 但响应中 status 含 error）。"""
 
     def __init__(self, message: str, status_code: int = 200, raw_response: dict | None = None):
         self.status_code = status_code
@@ -15,12 +15,12 @@ class HyperliquidApiError(HyperliquidError):
 
 
 class HyperliquidValidationError(HyperliquidError):
-    """Raised for client-side validation failures before sending request."""
+    """请求发出前的客户端校验失败（如非法 coin、价格/数量不合规）。"""
 
 
 class HyperliquidTimeoutError(HyperliquidError):
-    """Raised when an API request or polling operation times out."""
+    """API 请求或轮询等待超时时抛出。"""
 
 
 class HyperliquidSigningError(HyperliquidError):
-    """Raised when EIP-712 signing fails."""
+    """EIP-712 签名失败时抛出。"""

@@ -1,7 +1,7 @@
-"""Self-built Hyperliquid API client — no official/community SDK dependency.
+"""自研 Hyperliquid API 客户端，不依赖官方/社区 SDK。
 
-Covers: account query, place order, cancel order, order query, position query.
-All exchange (write) actions use EIP-712 phantom-agent signing.
+覆盖：账户查询、下单、撤单、订单查询、仓位查询、市场数据等。
+所有 exchange（写操作）均使用 EIP-712 phantom-agent 签名。
 """
 
 from __future__ import annotations
@@ -28,12 +28,12 @@ logger = get_logger("client")
 
 
 class HyperliquidClient:
-    """Thin, reusable wrapper around the Hyperliquid REST API."""
+    """对 Hyperliquid REST API 的轻量封装，可在多处复用。"""
 
     def __init__(self, config: Config) -> None:
         self._cfg = config
         self._wallet = Account.from_key(config.private_key)
-        # trust_env=False 避免使用环境变量中的 HTTP_PROXY/HTTPS_PROXY，直连 API（否则易出现代理 403）
+        # trust_env=False：不使用环境变量中的 HTTP_PROXY/HTTPS_PROXY，直连 API，避免代理 403
         self._http = httpx.Client(
             timeout=config.request_timeout,
             headers={"Content-Type": "application/json"},
@@ -44,10 +44,11 @@ class HyperliquidClient:
     def close(self) -> None:
         self._http.close()
 
-    # ── Info helpers (read-only, safe to retry) ────────────────────────
+    # ── Info 接口（只读，可安全重试）────────────────────────────────
 
     @retry(max_attempts=3, delay=1.0, exceptions=(httpx.HTTPError, HyperliquidTimeoutError))
     def _post_info(self, payload: dict) -> Any:
+        """向 /info 发 POST，用于查询类请求，带重试与 Allure 附件。"""
         logger.debug("POST %s  body=%s", self._cfg.info_url, _safe_repr(payload))
         with allure.step(f"API Info: {payload.get('type', 'unknown')}"):
             allure.attach(json.dumps(payload, indent=2), name="Request Payload", attachment_type=allure.attachment_type.JSON)
@@ -58,9 +59,10 @@ class HyperliquidClient:
             allure.attach(json.dumps(data, indent=2), name="Response Data", attachment_type=allure.attachment_type.JSON)
             return data
 
-    # ── Exchange helpers (write, NO auto-retry) ────────────────────────
+    # ── Exchange 接口（写操作，不自动重试）──────────────────────────────
 
     def _post_exchange(self, action: dict, nonce: int | None = None) -> dict:
+        """向 /exchange 发 POST，带 EIP-712 签名，不重试以防重复下单。"""
         if nonce is None:
             nonce = _timestamp_ms()
         signature = sign_l1_action(
@@ -97,13 +99,14 @@ class HyperliquidClient:
             self._check_exchange_response(data)
             return data
 
-    # ── Asset index resolution ─────────────────────────────────────────
+    # ── 资产索引解析 ───────────────────────────────────────────────────
 
     def get_meta(self) -> dict:
+        """获取合约元数据（universe 等）。"""
         return self._post_info({"type": "meta"})
 
     def resolve_asset(self, coin: str) -> int:
-        """Return the numeric asset index for a perpetual coin name."""
+        """根据永续合约名称返回对应的数字资产索引。"""
         if self._asset_map is None:
             meta = self.get_meta()
             self._asset_map = {
@@ -114,13 +117,14 @@ class HyperliquidClient:
         return self._asset_map[coin]
 
     def get_sz_decimals(self, coin: str) -> int:
+        """获取指定合约的数量小数位数。"""
         meta = self.get_meta()
         for item in meta["universe"]:
             if item["name"] == coin:
                 return item["szDecimals"]
         raise HyperliquidValidationError(f"Cannot find szDecimals for '{coin}'")
 
-    # ── Account ────────────────────────────────────────────────────────
+    # ── 账户 ────────────────────────────────────────────────────────────
 
     def get_clearinghouse_state(self, user: str | None = None) -> dict:
         user = user or self._cfg.wallet_address
@@ -130,7 +134,7 @@ class HyperliquidClient:
         state = self.get_clearinghouse_state(user)
         return float(state["marginSummary"]["accountValue"])
 
-    # ── Orders ─────────────────────────────────────────────────────────
+    # ── 订单 ───────────────────────────────────────────────────────────
 
     def get_open_orders(self, user: str | None = None) -> list[dict]:
         user = user or self._cfg.wallet_address
@@ -154,7 +158,7 @@ class HyperliquidClient:
         reduce_only: bool = False,
         cloid: str | None = None,
     ) -> dict:
-        """Place a single order. Returns the raw exchange response."""
+        """下一个单笔订单，返回 exchange 原始响应。"""
         asset = self.resolve_asset(coin)
         if order_type is None:
             order_type = {"limit": {"tif": "Gtc"}}
@@ -193,7 +197,7 @@ class HyperliquidClient:
         }
         return self._post_exchange(action)
 
-    # ── Positions ──────────────────────────────────────────────────────
+    # ── 仓位 ────────────────────────────────────────────────────────────
 
     def get_positions(self, user: str | None = None) -> list[dict]:
         state = self.get_clearinghouse_state(user)
@@ -205,7 +209,7 @@ class HyperliquidClient:
                 return pos
         return None
 
-    # ── Market data ────────────────────────────────────────────────────
+    # ── 市场数据 ────────────────────────────────────────────────────────
 
     def get_all_mids(self) -> dict[str, str]:
         return self._post_info({"type": "allMids"})
@@ -219,7 +223,7 @@ class HyperliquidClient:
     def get_l2_book(self, coin: str) -> dict:
         return self._post_info({"type": "l2Book", "coin": coin})
 
-    # ── Leverage ───────────────────────────────────────────────────────
+    # ── 杠杆 ────────────────────────────────────────────────────────────
 
     def update_leverage(self, coin: str, leverage: int, is_cross: bool = True) -> dict:
         asset = self.resolve_asset(coin)
@@ -231,7 +235,7 @@ class HyperliquidClient:
         }
         return self._post_exchange(action)
 
-    # ── User fills / history ───────────────────────────────────────────
+    # ── 成交与历史 ─────────────────────────────────────────────────────
 
     def get_user_fills(self, user: str | None = None) -> list[dict]:
         user = user or self._cfg.wallet_address
@@ -241,10 +245,10 @@ class HyperliquidClient:
         user = user or self._cfg.wallet_address
         return self._post_info({"type": "historicalOrders", "user": user})
 
-    # ── Cleanup utilities ──────────────────────────────────────────────
+    # ── 清理工具 ────────────────────────────────────────────────────────
 
     def cancel_all_open_orders(self) -> list[dict]:
-        """Best-effort cancel of every open order. Returns cancel results."""
+        """尽最大努力撤销所有未成交订单，返回撤单结果列表。"""
         open_orders = self.get_open_orders()
         results = []
         for order in open_orders:
@@ -255,11 +259,11 @@ class HyperliquidClient:
                 logger.warning("Failed to cancel order %s: %s", order["oid"], exc)
         return results
 
-    # ── Internal ───────────────────────────────────────────────────────
+    # ── 内部方法 ─────────────────────────────────────────────────────────
 
     @staticmethod
     def _exchange_error_message(resp: httpx.Response, data: dict | Any) -> str:
-        """Build error message from 4xx exchange response."""
+        """从 4xx 的 exchange 响应中提取可读错误信息。"""
         if isinstance(data, dict) and data:
             err = data.get("error") or data.get("message") or data.get("detail")
             if isinstance(err, str):
@@ -274,7 +278,7 @@ class HyperliquidClient:
 
     @staticmethod
     def _check_exchange_response(data: dict) -> None:
-        """Raise HyperliquidApiError if the exchange response contains an error."""
+        """若 exchange 响应中包含错误则抛出 HyperliquidApiError。"""
         if data.get("status") != "ok":
             raise HyperliquidApiError(
                 f"Exchange returned non-ok status: {data}",
@@ -292,7 +296,7 @@ class HyperliquidClient:
 
     @staticmethod
     def extract_oid(response: dict) -> int | None:
-        """Extract the order ID from a place-order response."""
+        """从下单响应中解析出订单 ID。"""
         try:
             statuses = response["response"]["data"]["statuses"]
             first = statuses[0]
@@ -310,7 +314,7 @@ def _timestamp_ms() -> int:
 
 
 def _safe_repr(obj: Any, max_len: int = 500) -> str:
-    """Truncated repr that avoids leaking full private keys in logs."""
+    """截断的 repr，避免在日志中泄露完整私钥等敏感内容。"""
     s = repr(obj)
     if len(s) > max_len:
         return s[:max_len] + "…"

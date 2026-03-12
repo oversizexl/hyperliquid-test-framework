@@ -1,4 +1,4 @@
-"""Polling-based wait utilities for eventually-consistent state."""
+"""基于轮询的等待工具，用于 testnet 最终一致状态（如订单可见、仓位归零）。"""
 
 from __future__ import annotations
 
@@ -19,20 +19,14 @@ def wait_until(
     timeout: float = 30.0,
     interval: float = 1.0,
 ) -> T:
-    """Poll *condition* until it returns a truthy value, or raise on timeout.
+    """轮询 condition()，直到返回真值或超时。
 
-    Args:
-        condition: Zero-arg callable. Return a truthy value to stop waiting,
-                   or None/False to keep polling.
-        description: Human-readable label for log messages.
-        timeout: Maximum seconds to wait.
-        interval: Seconds between polls.
-
-    Returns:
-        The first truthy value returned by *condition*.
-
-    Raises:
-        HyperliquidTimeoutError: If *timeout* is exceeded.
+    condition: 无参可调用，返回真值表示条件满足并停止等待，None/False 则继续轮询。
+    description: 用于日志的可读描述。
+    timeout: 最大等待秒数。
+    interval: 每次轮询间隔秒数。
+    返回: condition 首次返回的真值。
+    超时则抛出 HyperliquidTimeoutError。
     """
     deadline = time.monotonic() + timeout
     attempt = 0

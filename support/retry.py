@@ -1,4 +1,4 @@
-"""Configurable retry decorator for transient failures."""
+"""可配置的重试装饰器，用于瞬时失败（网络、超时等）。"""
 
 from __future__ import annotations
 
@@ -17,10 +17,9 @@ def retry(
     backoff: float = 2.0,
     exceptions: tuple[Type[Exception], ...] = (Exception,),
 ) -> Callable:
-    """Retry a function on specified exceptions with exponential backoff.
+    """在指定异常时按指数退避重试。
 
-    Only safe for idempotent / read operations. Never use on write operations
-    that may cause duplicate side-effects (e.g. placing orders).
+    仅适用于幂等/只读操作；切勿用于写操作（如下单），否则可能重复执行。
     """
 
     def decorator(func: Callable) -> Callable:

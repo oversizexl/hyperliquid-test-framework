@@ -1,7 +1,7 @@
-"""EIP-712 signing utilities for Hyperliquid exchange endpoint.
+"""Hyperliquid exchange 端 EIP-712 签名工具。
 
-Implements the phantom-agent signing flow required by L1 actions
-(order, cancel, updateLeverage, etc.) without using the official SDK.
+实现 L1 操作（下单、撤单、更新杠杆等）所需的 phantom-agent 签名流程，
+不依赖官方 SDK。
 """
 
 from decimal import Decimal
@@ -11,7 +11,7 @@ from eth_account import Account
 from eth_account.messages import encode_typed_data
 from eth_utils import keccak, to_hex
 
-
+# EIP-712 签名用的 Phantom 域（主网/测试网通用）
 PHANTOM_DOMAIN = {
     "chainId": 1337,
     "name": "Exchange",
@@ -19,6 +19,7 @@ PHANTOM_DOMAIN = {
     "version": "1",
 }
 
+# EIP-712 的 Agent 类型定义
 AGENT_TYPES = {
     "Agent": [
         {"name": "source", "type": "string"},
@@ -34,6 +35,7 @@ AGENT_TYPES = {
 
 
 def float_to_wire(x: float) -> str:
+    """将浮点数转为 API 要求的字符串格式（最多 8 位小数，无多余尾零）。"""
     rounded = f"{x:.8f}"
     if abs(float(rounded) - x) >= 1e-12:
         raise ValueError(f"float_to_wire causes rounding: {x}")
@@ -42,6 +44,7 @@ def float_to_wire(x: float) -> str:
 
 
 def _address_to_bytes(address: str) -> bytes:
+    """将 0x 开头的地址转为 20 字节。"""
     return bytes.fromhex(address[2:] if address.startswith("0x") else address)
 
 
@@ -51,6 +54,7 @@ def _action_hash(
     nonce: int,
     expires_after: int | None = None,
 ) -> bytes:
+    """对 L1 action 做 msgpack 序列化后与 nonce/vault 等一起做 keccak256，得到 connectionId。"""
     data = msgpack.packb(action)
     data += nonce.to_bytes(8, "big")
     if vault_address is None:
@@ -72,7 +76,7 @@ def sign_l1_action(
     is_mainnet: bool,
     expires_after: int | None = None,
 ) -> dict:
-    """Sign an L1 action (order, cancel, updateLeverage, etc.)."""
+    """对 L1 操作（下单、撤单、更新杠杆等）进行 EIP-712 签名，返回 r/s/v。"""
     hash_val = _action_hash(action, vault_address, nonce, expires_after)
     phantom_agent = {
         "source": "a" if is_mainnet else "b",

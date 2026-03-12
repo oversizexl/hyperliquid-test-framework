@@ -1,4 +1,4 @@
-"""Root conftest — re-exports session fixtures and adds sys.path setup."""
+"""根 conftest：把项目根加入 sys.path，并导出 wallet_fixture 中的 session fixtures。"""
 
 import os
 import sys
@@ -10,7 +10,7 @@ from fixtures.wallet_fixture import *  # noqa: F401, F403, E402
 
 
 def pytest_configure(config):
-    """Ensure Allure results dir exists and write environment properties."""
+    """确保 reports/allure-results 存在，并写入 environment.properties 供 Allure 展示。"""
     allure_results = Path("reports/allure-results")
     allure_results.mkdir(parents=True, exist_ok=True)
     env_file = allure_results / "environment.properties"

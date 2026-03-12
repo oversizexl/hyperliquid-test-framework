@@ -87,7 +87,7 @@ allure open reports/allure-report
 
 ### 使用 GitHub Actions + Cloudflare Pages 自动发布报告
 
-本仓库已内置 CI 工作流 `.github/workflows/test.yml`，支持 **自动在云端生成 Allure HTML 并发布到 Cloudflare Pages**。你只需配置好 Secrets，fork 后即可一键跑通。
+本仓库已内置 CI 工作流 `.github/workflows/Hyperliquid_test_suite.yml`，支持 **自动在云端生成 Allure HTML 并发布到 Cloudflare Pages**。你只需配置好 Secrets，fork 后即可一键跑通。
 
 - **Hyperliquid 钱包相关 Secrets（用于真实下单）**：
   - `HL_WALLET_ADDRESS`：测试网钱包地址
@@ -156,7 +156,7 @@ hyperliquid-test-framework/
 │   └── config.yaml                # 默认配置
 │
 ├── .github/workflows/
-│   └── test.yml                   # GitHub Actions CI
+│   └── Hyperliquid_test_suite.yml  # GitHub Actions CI（含 push/PR/定时/手动触发）
 │
 ├── reports/                       # 测试报告输出目录
 ├── conftest.py                    # pytest 根 conftest
@@ -260,13 +260,24 @@ order = wait_until(
 
 ## CI
 
-项目配置了 GitHub Actions，在 push / PR / 手动触发时自动运行 **Hyperliquid Test Suite**：
+项目配置了 GitHub Actions（`.github/workflows/Hyperliquid_test_suite.yml`），在 **push / PR / 手动触发** 时自动运行 **Hyperliquid Test Suite**：
 
 1. **Smoke 测试**：`tests/test_account.py` + `tests/test_errors.py`，标记为 `smoke or error`，即使钱包未配置也会尝试运行。
 2. **完整测试**：当仓库 Secrets 中存在 `HL_PRIVATE_KEY` 时，会运行除并发测试外的全部用例（`-m "not concurrent"`）。
 3. **Allure 报告**：
    - 所有运行都会把 `reports/` 目录（含 `allure-results`）上传为 GitHub Actions artifact；
    - 当配置了 Cloudflare 相关 Secrets 且 Python 版本为 3.12 的那条流水线，会自动生成并发布 Allure HTML 到 Cloudflare Pages。
+
+### 每日定时执行（可选）
+
+工作流支持 **按北京时间每天 00:00 自动跑一轮测试**，由顶层环境变量 **`DAILY_SCHEDULE_ENABLED`** 控制：
+
+| 值 | 含义 |
+|----|------|
+| `"false"`（默认） | 不执行定时任务：只有 push、PR、手动触发时会跑。 |
+| `"true"` | 开启定时：除上述触发外，每天北京时间 0 点会再自动跑一次。 |
+
+修改方式：在 `.github/workflows/Hyperliquid_test_suite.yml` 的顶层 `env` 里找到 `DAILY_SCHEDULE_ENABLED`，改为 `"true"` 即开启每日定时；改回 `"false"` 即关闭。定时采用 GitHub 的 `schedule`（cron），使用 UTC 时间，当前配置对应北京 00:00。
 
 > 推荐在 fork 后，先只配置 `HL_WALLET_ADDRESS` 和 `HL_PRIVATE_KEY` 验证测试，再补充 Cloudflare 的 3 个 Secrets，最后在 Cloudflare Pages 里为项目绑定你自己的域名，以便通过固定 URL 访问最新报告。
 
