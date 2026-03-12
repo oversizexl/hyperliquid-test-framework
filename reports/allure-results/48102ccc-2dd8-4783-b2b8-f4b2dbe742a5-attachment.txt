@@ -1,1 +1,0 @@
-2026-03-12 16:00:30 | INFO     | hl.fixture | Client initialised for https://api.hyperliquid-testnet.xyz
