@@ -13,9 +13,6 @@ build/
 .pytest_cache/
 htmlcov/
 .coverage
-reports/*.html
-reports/allure-results/
-reports/allure-report/
 
 .venv/
 venv/
