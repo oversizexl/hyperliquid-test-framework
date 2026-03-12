@@ -87,7 +87,9 @@ allure open reports/allure-report
 
 - 工作流文件：`.github/workflows/Hyperliquid_test_suite.yml`
 - 触发方式：
-  - **手动触发**：在 GitHub Actions 页面点击 “Run workflow”
+  - **手动触发**：在 GitHub Actions 页面点击 “Run workflow”，可通过 `marker` 输入控制本次运行范围：
+    - 为空：跑默认组合（smoke + 全量，排除 concurrent）
+    - `smoke` / `order` / `position` / `error` / `concurrent`：等同执行 `pytest -m <marker> -v`
   - **定时触发（可选）**：每天北京时间 00:00，是否真正执行由仓库变量 `DAILY_SCHEDULE_ENABLED` 控制  
     - 未设置或值 ≠ `true`：仅手动触发会跑  
     - 设为 `true`：手动 + 每天定时都会跑
