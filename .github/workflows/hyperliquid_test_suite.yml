@@ -26,23 +26,24 @@ env:
 # 在 Settings → Secrets and variables → Actions → Variables 中新增 DAILY_SCHEDULE_ENABLED = true 即开启
 
 jobs:
-  # 非定时触发时始终运行；定时触发时仅当仓库变量 DAILY_SCHEDULE_ENABLED == 'true' 时才运行
-  if: github.event_name != 'schedule' || vars.DAILY_SCHEDULE_ENABLED == 'true'
-  runs-on: ubuntu-latest
-  # 将仓库 Secrets 映射为 env，避免在 if 等表达式中直接使用 secrets 导致 fork PR 解析错误
-  env:
-    HL_WALLET_ADDRESS: ${{ secrets.HL_WALLET_ADDRESS }}
-    HL_PRIVATE_KEY: ${{ secrets.HL_PRIVATE_KEY }}
-    CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
-    CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
-    CF_PAGES_PROJECT_NAME: ${{ secrets.CF_PAGES_PROJECT_NAME }}
-  steps:
-    - uses: actions/checkout@v4
+  test:
+    # 非定时触发时始终运行；定时触发时仅当仓库变量 DAILY_SCHEDULE_ENABLED == 'true' 时才运行
+    if: github.event_name != 'schedule' || vars.DAILY_SCHEDULE_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    # 将仓库 Secrets 映射为 env，避免在 if 等表达式中直接使用 secrets 导致 fork PR 解析错误
+    env:
+      HL_WALLET_ADDRESS: ${{ secrets.HL_WALLET_ADDRESS }}
+      HL_PRIVATE_KEY: ${{ secrets.HL_PRIVATE_KEY }}
+      CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+      CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+      CF_PAGES_PROJECT_NAME: ${{ secrets.CF_PAGES_PROJECT_NAME }}
+    steps:
+      - uses: actions/checkout@v4
 
-    - name: Set up Python 3.12
-      uses: actions/setup-python@v5
-      with:
-        python-version: "3.12"
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
 
     - name: Install dependencies
       run: |
