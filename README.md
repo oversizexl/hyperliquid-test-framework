@@ -60,6 +60,19 @@ pytest -m error       # 错误处理
 pytest -m concurrent  # 并发（可选）
 ```
 
+### 5. 快速生成新测试用例骨架
+
+```bash
+python scripts/new_test_case.py \
+  --name get_positions \
+  --marker position \
+  --feature "仓位" \
+  --story "查询仓位" \
+  --title "查询仓位列表结构正确"
+```
+
+会在 `tests/` 下生成 `test_get_positions.py`，包含带 Allure 标注和 `@pytest.mark.position` 的用例骨架，你只需按需补充具体调用和断言即可。若文件已存在，可以加 `--append` 在文件末尾追加新用例。
+
 ---
 
 ## Allure 报告 & Cloudflare Pages
