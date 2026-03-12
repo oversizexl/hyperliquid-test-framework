@@ -1,3 +1,0 @@
-2026-03-12 16:00:53 | INFO     | hl.client | POST https://api.hyperliquid-testnet.xyz/exchange  action.type=order
-2026-03-12 16:00:55 | INFO     | hl.client | POST https://api.hyperliquid-testnet.xyz/exchange  action.type=cancel
-2026-03-12 16:00:55 | INFO     | hl.waiter | Condition 'order 49993455641 status=canceled' met after 1 polls
