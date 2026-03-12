@@ -1,0 +1,9 @@
+base_url: "https://api.hyperliquid-testnet.xyz"
+is_mainnet: false
+
+test:
+  default_coin: "ETH"
+  poll_interval: 1.0
+  max_wait_seconds: 30
+  request_timeout: 15
+  order_min_value_usd: 10

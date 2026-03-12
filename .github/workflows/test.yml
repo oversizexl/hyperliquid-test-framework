@@ -1,0 +1,87 @@
+name: Hyperliquid Test Suite
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+env:
+  HL_BASE_URL: https://api.hyperliquid-testnet.xyz
+  HL_IS_MAINNET: "false"
+  HL_DEFAULT_COIN: ETH
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install Allure CLI
+        run: |
+          ALLURE_VERSION=2.29.0
+          curl -sL "https://github.com/allure-framework/allure2/releases/download/${ALLURE_VERSION}/allure-${ALLURE_VERSION}.tgz" -o allure.tgz
+          sudo tar -zxvf allure.tgz -C /opt/
+          sudo ln -s /opt/allure-${ALLURE_VERSION}/bin/allure /usr/local/bin/allure
+
+      - name: Run smoke tests (no wallet required)
+        run: |
+          pytest tests/test_account.py tests/test_errors.py \
+            -m "smoke or error" \
+            -v \
+            || true
+        env:
+          HL_WALLET_ADDRESS: ${{ secrets.HL_WALLET_ADDRESS }}
+          HL_PRIVATE_KEY: ${{ secrets.HL_PRIVATE_KEY }}
+
+      - name: Run full test suite
+        if: ${{ secrets.HL_PRIVATE_KEY != '' }}
+        run: |
+          pytest \
+            -v \
+            -m "not concurrent"
+        env:
+          HL_WALLET_ADDRESS: ${{ secrets.HL_WALLET_ADDRESS }}
+          HL_PRIVATE_KEY: ${{ secrets.HL_PRIVATE_KEY }}
+
+      - name: Generate Allure HTML report
+        if: always() && matrix.python-version == '3.12'
+        run: |
+          if [ -d "reports/allure-results" ]; then
+            allure generate reports/allure-results -o reports/allure-report --clean
+          else
+            echo "No allure-results directory found, skip HTML generation."
+          fi
+
+      - name: Deploy Allure report to Cloudflare Pages
+        if: always() && matrix.python-version == '3.12'
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+          accountId: ${{ secrets.CF_ACCOUNT_ID }}
+          projectName: ${{ secrets.CF_PAGES_PROJECT_NAME }}
+          directory: reports/allure-report
+          branch: main
+
+      - name: Upload test report (Allure raw results)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports-py${{ matrix.python-version }}
+          path: reports/
+          retention-days: 14

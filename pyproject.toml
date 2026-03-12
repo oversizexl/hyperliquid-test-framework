@@ -1,0 +1,17 @@
+[project]
+name = "hyperliquid-test-framework"
+version = "1.0.0"
+description = "Automated testing framework for Hyperliquid Testnet API"
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "smoke: Quick, non-destructive sanity checks",
+    "order: Order lifecycle tests",
+    "position: Position management tests",
+    "error: Error handling tests",
+    "concurrent: Concurrent stress tests",
+]
+# 每次运行前清空上一次的 allure-results，保证报告只包含本次运行结果
+addopts = "-v --tb=short --alluredir=reports/allure-results --clean-alluredir"
