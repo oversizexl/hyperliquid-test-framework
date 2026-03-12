@@ -15,19 +15,19 @@ on:
   # 支持在 Actions 页手动点击 “Run workflow” 触发
   workflow_dispatch:
 
-# 工作流级环境变量（所有 job 可见）
+# 工作流级环境变量（所有 job 的 steps 可见）
 env:
   HL_BASE_URL: https://api.hyperliquid-testnet.xyz
   HL_IS_MAINNET: "false"
   HL_DEFAULT_COIN: ETH
-  # 是否开启「每日定时自动执行」：仅当由 schedule 触发时生效
-  # "true" = 每日 0 点（北京时间）自动跑一轮；"false" = 不跑定时任务
-  DAILY_SCHEDULE_ENABLED: "false"
+
+# 每日定时是否运行：由「仓库变量」控制，避免 job 级 if 中 env 不可用的问题
+# 在 Settings → Secrets and variables → Actions → Variables 中新增 DAILY_SCHEDULE_ENABLED = true 即开启
 
 jobs:
   test:
-    # 非定时触发时始终运行；定时触发时仅当 DAILY_SCHEDULE_ENABLED 为 true 才运行
-    if: github.event_name != 'schedule' || env.DAILY_SCHEDULE_ENABLED == 'true'
+    # 非定时触发时始终运行；定时触发时仅当仓库变量 DAILY_SCHEDULE_ENABLED == 'true' 时才运行
+    if: github.event_name != 'schedule' || vars.DAILY_SCHEDULE_ENABLED == 'true'
     runs-on: ubuntu-latest
     # 将仓库 Secrets 映射为 env，避免在 if 等表达式中直接使用 secrets 导致 fork PR 解析错误
     env:

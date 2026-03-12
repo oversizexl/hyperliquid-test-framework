@@ -270,14 +270,14 @@ order = wait_until(
 
 ### 每日定时执行（可选）
 
-工作流支持 **按北京时间每天 00:00 自动跑一轮测试**，由顶层环境变量 **`DAILY_SCHEDULE_ENABLED`** 控制：
+工作流支持 **按北京时间每天 00:00 自动跑一轮测试**，由 **仓库变量** **`DAILY_SCHEDULE_ENABLED`** 控制（因 job 级 `if` 中不能使用 `env`，故用变量）：
 
-| 值 | 含义 |
-|----|------|
-| `"false"`（默认） | 不执行定时任务：只有 push、PR、手动触发时会跑。 |
-| `"true"` | 开启定时：除上述触发外，每天北京时间 0 点会再自动跑一次。 |
+| 配置 | 含义 |
+|------|------|
+| 未设置或 ≠ `true` | 不执行定时任务：只有 push、PR、手动触发时会跑。 |
+| 设为 `true` | 开启定时：除上述触发外，每天北京时间 0 点会再自动跑一次。 |
 
-修改方式：在 `.github/workflows/Hyperliquid_test_suite.yml` 的顶层 `env` 里找到 `DAILY_SCHEDULE_ENABLED`，改为 `"true"` 即开启每日定时；改回 `"false"` 即关闭。定时采用 GitHub 的 `schedule`（cron），使用 UTC 时间，当前配置对应北京 00:00。
+**开启方式**：在 GitHub 仓库 **Settings → Secrets and variables → Actions → Variables** 中，新增变量名 `DAILY_SCHEDULE_ENABLED`，值填 `true`。关闭则删除该变量或将值改为非 `true`。定时使用 GitHub `schedule`（cron），当前配置对应北京 00:00。
 
 > 推荐在 fork 后，先只配置 `HL_WALLET_ADDRESS` 和 `HL_PRIVATE_KEY` 验证测试，再补充 Cloudflare 的 3 个 Secrets，最后在 Cloudflare Pages 里为项目绑定你自己的域名，以便通过固定 URL 访问最新报告。
 
