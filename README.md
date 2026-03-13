@@ -23,7 +23,7 @@
 
 ### 场景一：GitHub Actions 在线执行
 
-在仓库 **Settings → Secrets and variables → Actions** 中配置：
+Fork后在仓库 **Settings → Secrets and variables → Actions** 中配置：
 
 - **Secrets**（敏感信息，需加密存储）  
   - `HL_WALLET_ADDRESS`：测试网钱包地址  
