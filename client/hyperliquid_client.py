@@ -247,17 +247,46 @@ class HyperliquidClient:
 
     # ── 清理工具 ────────────────────────────────────────────────────────
 
-    def cancel_all_open_orders(self) -> list[dict]:
-        """尽最大努力撤销所有未成交订单，返回撤单结果列表。"""
-        open_orders = self.get_open_orders()
-        results = []
+    def cancel_all_open_orders(self) -> int:
+        """尽最大努力撤销所有未成交订单；返回成功撤销的订单数量。优先批量撤单，失败时逐单撤。"""
+        raw = self.get_open_orders()
+        if isinstance(raw, list):
+            open_orders = raw
+        elif isinstance(raw, dict):
+            open_orders = raw.get("data", raw.get("orders", raw.get("result", raw.get("openOrders", []))))
+        else:
+            open_orders = []
+        if not isinstance(open_orders, list):
+            open_orders = []
+        to_cancel: list[tuple[str, int]] = []
         for order in open_orders:
+            if not isinstance(order, dict):
+                continue
+            coin = order.get("coin")
+            oid = order.get("oid")
+            if coin is None or oid is None:
+                logger.warning("Skip order with missing coin/oid: %s", order)
+                continue
+            to_cancel.append((coin, oid))
+        if not to_cancel:
+            return 0
+        # 优先一次请求批量撤单，减少失败和限流
+        try:
+            cancels = [{"a": self.resolve_asset(coin), "o": oid} for coin, oid in to_cancel]
+            action = {"type": "cancel", "cancels": cancels}
+            self._post_exchange(action)
+            logger.info("Cancelled %s open order(s) in one request", len(to_cancel))
+            return len(to_cancel)
+        except Exception as exc:
+            logger.warning("Batch cancel failed (%s), falling back to per-order cancel: %s", len(to_cancel), exc)
+        cancelled = 0
+        for coin, oid in to_cancel:
             try:
-                result = self.cancel_order(order["coin"], order["oid"])
-                results.append(result)
+                self.cancel_order(coin, oid)
+                cancelled += 1
             except Exception as exc:
-                logger.warning("Failed to cancel order %s: %s", order["oid"], exc)
-        return results
+                logger.warning("Failed to cancel order %s: %s", oid, exc)
+        return cancelled
 
     # ── 内部方法 ─────────────────────────────────────────────────────────
 

@@ -3,7 +3,7 @@ name: Hyperliquid Test Suite
 
 # 触发条件：仅手动触发 + 定时触发（不随 push/PR 自动跑，节省 token）
 on:
-  # 定时触发：北京时间每天 00:00（UTC+8 = UTC 16:00），是否执行由仓库变量 DAILY_SCHEDULE_ENABLED 控制
+  # 定时触发：北京时间每天 00:00（UTC+8 = UTC 16:00），是否执行由仓库 Secret DAILY_SCHEDULE_ENABLED 控制
   schedule:
     - cron: "0 16 * * *"
   # 在 Actions 页点击 “Run workflow” 手动触发，可指定 pytest -m 的 marker
@@ -22,14 +22,14 @@ env:
   HL_IS_MAINNET: "false"
   HL_DEFAULT_COIN: ETH
 
-# 每日定时是否运行：由「仓库变量」控制，避免 job 级 if 中 env 不可用的问题
-# 在 Settings → Secrets and variables → Actions → Variables 中新增 DAILY_SCHEDULE_ENABLED = true 即开启
+# 每日定时是否运行：由「仓库 Secret」控制，避免 job 级 if 中 env 不可用的问题
+# 在 Settings → Secrets and variables → Actions → Secrets 中新增 DAILY_SCHEDULE_ENABLED = true 即开启
 
 jobs:
   e2e:
     name: Hyperliquid E2E Tests
-    # 非定时触发时始终运行；定时触发时仅当仓库变量 DAILY_SCHEDULE_ENABLED == 'true' 时才运行
-    if: ${{ github.event_name != 'schedule' || vars.DAILY_SCHEDULE_ENABLED == 'true' }}
+    # 非定时触发时始终运行；定时触发时仅当仓库 Secret DAILY_SCHEDULE_ENABLED == 'true' 时才运行
+    if: ${{ github.event_name != 'schedule' || secrets.DAILY_SCHEDULE_ENABLED == 'true' }}
     runs-on: ubuntu-latest
     # 将仓库 Secrets 映射为 env，避免在 if 等表达式中直接使用 secrets 导致 fork PR 解析错误
     env:

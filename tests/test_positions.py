@@ -12,28 +12,53 @@ from support.logger import get_logger
 logger = get_logger("test.positions")
 
 
+# 市价单用 IOC + 限价；必须用 L2 盘口最优价才能立即成交，否则会报 "could not immediately match"
+def _best_ask(client: HyperliquidClient, coin: str) -> float | None:
+    """L2 最优卖价；无卖盘时返回 None。"""
+    book = client.get_l2_book(coin)
+    if isinstance(book, list) and len(book) >= 2 and book[1]:
+        first = book[1][0]
+        if isinstance(first, dict) and "px" in first:
+            return float(first["px"])
+    return None
+
+
+def _best_bid(client: HyperliquidClient, coin: str) -> float | None:
+    """L2 最优买价；无买盘时返回 None。"""
+    book = client.get_l2_book(coin)
+    if isinstance(book, list) and len(book) >= 1 and book[0]:
+        first = book[0][0]
+        if isinstance(first, dict) and "px" in first:
+            return float(first["px"])
+    return None
+
+
 def _market_buy(client: HyperliquidClient, coin: str, sz: float) -> dict:
-    """Place an aggressive IOC buy that should fill immediately."""
-    mid = client.get_mid_price(coin)
-    aggressive_px = round(mid * 1.05, 1)  # 5 % above mid
+    """IOC 买入：限价取 L2 最优卖价，确保能立即吃单。盘口无卖盘时跳过（testnet 无流动性）。"""
+    px = _best_ask(client, coin)
+    if px is None:
+        pytest.skip("No asks in L2 book for %s — testnet has no sell-side liquidity" % coin)
+    px = round(px, 1)
     return client.place_order(
         coin=coin,
         is_buy=True,
         sz=sz,
-        limit_px=aggressive_px,
+        limit_px=px,
         order_type={"limit": {"tif": "Ioc"}},
     )
 
 
 def _market_sell(client: HyperliquidClient, coin: str, sz: float) -> dict:
-    """Place an aggressive IOC sell that should fill immediately."""
-    mid = client.get_mid_price(coin)
-    aggressive_px = round(mid * 0.95, 1)  # 5 % below mid
+    """IOC 卖出：限价取 L2 最优买价，确保能立即吃单。盘口无买盘时跳过（testnet 无流动性）。"""
+    px = _best_bid(client, coin)
+    if px is None:
+        pytest.skip("No bids in L2 book for %s — testnet has no buy-side liquidity" % coin)
+    px = round(px, 1)
     return client.place_order(
         coin=coin,
         is_buy=False,
         sz=sz,
-        limit_px=aggressive_px,
+        limit_px=px,
         order_type={"limit": {"tif": "Ioc"}},
     )
 
