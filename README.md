@@ -9,11 +9,11 @@
 ## ✨ 为什么选这个框架？
 
 
-| 特性                           | 说明                                                                  |
-| ---------------------------- | ------------------------------------------------------------------- |
-| 🔧 **自研 Hyperliquid Client** | 不依赖官方/社区 SDK，完整实现请求封装 + EIP‑712 phantom‑agent 签名                    |
-| ⚡ **一键 CI & 报告**             | GitHub Actions 跑测试 → 生成 Allure 报告 → 自动部署到 Cloudflare Pages，固定域名随时查看 |
-| 🛡️ **安全的测试网回放**             | 默认连 Testnet，读写分离、只对读操作重试，写操作不重试，避免重复下单                              |
+| 特性                           | 说明                                                                                        |
+| ---------------------------- | ----------------------------------------------------------------------------------------- |
+| 🔧 **自研 Hyperliquid Client** | 不依赖官方/社区 SDK，完整实现请求封装 + EIP‑712 phantom‑agent 签名                                          |
+| ⚡ **一键 CI & 报告**             | GitHub Actions 跑测试 → 生成 Allure 报告 → 自动部署到 Cloudflare Pages，固定域名随时查看                       |
+| 🛡️ **安全的测试网回放**             | 默认连 Testnet，读写分离、只对读操作重试，写操作不重试，避免重复下单                                                    |
 | 🧹 **良好的测试隔离**               | Session 开始/每个用例后/Session 结束都会清理**未成交单**（open orders），跑完 pytest 后 open 订单数应为 0；历史订单数会随测试增加 |
 
 
@@ -28,7 +28,8 @@
 - **Secrets**（敏感信息，需加密存储）  
   - `HL_WALLET_ADDRESS`：测试网钱包地址  
   - `HL_PRIVATE_KEY`：对应私钥（务必使用测试钱包）  
-  - `CF_ACCOUNT_ID` / `CF_API_TOKEN` / `CF_PAGES_PROJECT_NAME`：Cloudflare Pages 部署所需  
+  - `CF_ACCOUNT_ID` / `CF_API_TOKEN` / `CF_PAGES_PROJECT_NAME`：Cloudflare Pages 部署所需
+- **Variables**（非敏感配置）  
   - `DAILY_SCHEDULE_ENABLED`（可选）：设为 `true` 时启用每天北京时间 00:00 定时测试；不设或非 `true` 时仅手动触发
 
 配置完成后，在 **Actions** 页面选择工作流并点击 **Run workflow** 即可执行；报告会自动部署到 Cloudflare Pages（见下文「Allure 报告」）。
@@ -117,7 +118,7 @@ allure open reports/allure-report
   - **手动触发**：在 GitHub Actions 页面点击 “Run workflow”，可通过 `marker` 输入控制本次运行范围：
     - 为空：跑默认组合（smoke + 全量，排除 concurrent）
     - `smoke` / `order` / `position` / `error` / `concurrent`：等同执行 `pytest -m <marker> -v`
-  - **定时触发（可选）**：每天北京时间 00:00，是否执行由仓库 Secret `DAILY_SCHEDULE_ENABLED` 控制  
+  - **定时触发（可选）**：每天北京时间 00:00，是否执行由仓库 Variable `DAILY_SCHEDULE_ENABLED` 控制  
     - 未设置或值 ≠ `true`：仅手动触发会跑  
     - 设为 `true`：手动 + 每天定时都会跑
 
